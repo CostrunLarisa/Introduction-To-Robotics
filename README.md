@@ -11,7 +11,7 @@ Repository dedicated to the assignments from the course "Introduction To Robotic
 -Technical Task:Use a separat potentiometer in controlling each of thecolor of the RGB led (Red,Green andBlue).  The control must be donewithdigital electronics(aka you must read the value of the potentiome-ter with Arduino, and write a mapped value to each of the pins connectedto the led.!
 
 ### Picture of the setup
-[WhatsApp Image 2021-10-25 at 16 29 58](https://user-images.githubusercontent.com/41392462/138708154-b5453248-f288-45c7-8663-9ead6e018ecb.jpeg)
+![alt text](https://user-images.githubusercontent.com/41392462/138708154-b5453248-f288-45c7-8663-9ead6e018ecb.jpeg)
 
 ### Code source details
 In the first place were set all the constant values and global variables needed, such :
