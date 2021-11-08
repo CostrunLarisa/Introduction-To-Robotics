@@ -54,7 +54,7 @@ The homework consists of the following components:
 - Task:should detect EMF (check body and near outlets.DO NOT IN-SERT INTO OUTLET). It should printthe value on the 7-segment display (or light the led bar)andshould makea sound based on the intensity.
 - The catch:it’s really easy,  but one of  the mistakes you can do is notcalibrate for the interval on the values you are going to get. 
 ### Picture of the setup
-![alt text]!(https://user-images.githubusercontent.com/41392462/140768503-a37edcea-ff1d-4305-a163-4cc5f80fa05a.jpg)
+![alt text](https://user-images.githubusercontent.com/41392462/140768503-a37edcea-ff1d-4305-a163-4cc5f80fa05a.jpg)
 
 ### Link to video showcasing functionality
 https://www.youtube.com/watch?v=OcYLy97b0Es&feature=youtu.be&ab_channel=BiancaLarisa
