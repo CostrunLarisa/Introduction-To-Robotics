@@ -46,3 +46,12 @@ Be careful:  pressing  the  button  in  any  state  other  than  state  1  shoul
 
 ### Link to video showcasing functionality
 https://www.youtube.com/watch?v=XopwuBzEMZA&ab_channel=BiancaLarisa
+
+## Homework 3 - EMF Detector(Ghost Detector)
+### Requirements
+The homework consists of the following components:
+- a buzzer and a 7-segment display (or a led bar / or 8 ledsin a row that simulate a led bar)
+- Task:should detect EMF (check body and near outlets.DO NOT IN-SERT INTO OUTLET). It should printthe value on the 7-segment display (or light the led bar)andshould makea sound based on the intensity.
+- The catch:it’s really easy,  but one of  the mistakes you can do is notcalibrate for the interval on the values you are going to get. 
+### Picture of the setup
+### Link to video showcasing functionality
