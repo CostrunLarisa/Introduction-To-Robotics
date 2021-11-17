@@ -62,7 +62,7 @@ https://www.youtube.com/watch?v=OcYLy97b0Es&feature=youtu.be&ab_channel=BiancaLa
 ## Homework 4 - Numbers on 7-segment display
 The current home-work involves using a joystick in setting the values on each digit of a 4-digit7-segment display connected to a shift register 74hc595. 
 ### Requirements:
-- Components:a  joystick,  a  4  digit  7-segment  display,  a  74hc595  shiftregister.
+- Components:a  joystick,  a  4  digit  7-segment  display,  a  74hc595  shift register.
 - Task:
 1. First  state:   you  can  use  a  joystick  axis  to  cycle  through the 4 digits; using the other axis does nothing. A blinking decimal point shows the current digit position. When pressing the button (must use interruptfor  maximum  points!),  you  lock  in  on  the  selected  digit  and  enter  the second state.
 2. In the second state, the decimal point stays always on, no longer blinking and you can no longer use the axis to cycle through the 4 digits.Instead, using the other axis, you can increment on decrement the number on the current digit.  Pressing the button again returns you to the previous state. When changing the number, you must increment it for each joystick movement - it should not work continuosly increment if you keep the joystick in one position.
