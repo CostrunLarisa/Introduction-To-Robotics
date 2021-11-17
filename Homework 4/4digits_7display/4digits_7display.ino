@@ -28,7 +28,7 @@ int displayByteDigits[] = {
   B11111100,    
 };
 int displayDigits[] = {
-seg01, seg02, seg03, seg04
+  seg01, seg02, seg03, seg04
 };
 
 const int displayCount = 4;
@@ -59,7 +59,7 @@ byte digitArray[16] = {
 bool dpState = LOW;
 // states of the button press
 bool swState = LOW;
-bool lastSwState = LOW;
+volatile bool lastSwState = LOW;
 int xValue = 0;
 int yValue = 0;
 
@@ -78,8 +78,8 @@ void setup() {
   pinMode(latchPin, OUTPUT);
   pinMode(clockPin, OUTPUT);
   pinMode(pinSW, INPUT_PULLUP); 
-  attachInterrupt(digitalPinToInterrupt(pinSW), signal, FALLING);
-  for(int i =  0; i < displayCount; i++) {
+  attachInterrupt(digitalPinToInterrupt(pinSW), signalDP, FALLING);
+  for(int i =  0; i < displayCount; i++){
     pinMode(displayDigits[i], OUTPUT);
     digitalWrite(displayDigits[i], LOW);
   }
@@ -87,7 +87,6 @@ void setup() {
 }
 
 void loop() {
-  writeNumber();
   // If we switch through digits (the joystick button wasn't pushed)
   if(isPushed == false) {
     firstState();
@@ -99,9 +98,10 @@ void loop() {
   }
 }
 
-void firstState() {
+void firstState(){
  // On Ox axis, if the value is lower than a chosen min threshold, then
  // decrease by 1 the digit value.
+  writeNumber();
   xValue = analogRead(pinX);
   currentMillis = millis();
   if (xValue < minThreshold && joyMoved == false) {
@@ -117,8 +117,7 @@ void firstState() {
   if (xValue > maxThreshold && joyMoved == false) {
     if (indexDP > 0) {
         indexDP--;
-    }
-    else {
+    } else {
         indexDP = 0;
     }
     joyMoved = true;
@@ -155,49 +154,48 @@ void secondState() {
   displayByteDigits[indexDP] = digitArray[lastDigit];  
 }
 
-void changeStateDP(int state) {
+void changeStateDP(bool stateDigit) {
   byte byteDigit = digitArray[lastDigit];
-  bitWrite(byteDigit, 0, state);
+  bitWrite(byteDigit, 0, stateDigit);
   displayByteDigits[indexDP] = byteDigit;
   showDigit(indexDP);
   writeReg(byteDigit);
   //delay(2);
+
 }
-void signal() {
+void signalDP() {
   isPushed = true;
   lastSwState = LOW;
 }
-void changeValue() {
+void changeValue(){
   yValue = analogRead(pinY);
   if (yValue < minThreshold && joyMoved == false) {
     if (displayLastDigit[indexDP] < 9) {
           displayLastDigit[indexDP]++;
-        }
-    else {
+        } else {
           displayLastDigit[indexDP] = 9;
         }
-    joyMoved = true;
-  }
+        joyMoved = true;
+      }
     // On Oy axis, if the value is bigger than a chosen max threshold, then
     // increase by 1 the digit value
   if (yValue > maxThreshold && joyMoved == false) {
     if (displayLastDigit[indexDP] > 0) {
           displayLastDigit[indexDP]--;
-        }
-    else {
+        } else {
           displayLastDigit[indexDP] = 0;
         }
-    joyMoved = true;    
+        joyMoved = true;    
   }
 
-  if (yValue >= minThreshold && yValue <= maxThreshold) {
+    if (yValue >= minThreshold && yValue <= maxThreshold) {
       joyMoved = false;
-  }
+    }
 }
-void blinkingDP() {
+void blinkingDP(){
    // If we are on a display and we didn't move
   int byteDigit = displayByteDigits[lastDigit];
-  if(currentMillis - previousMillis >= interval) {
+  if(currentMillis - previousMillis >= interval){
     previousMillis = currentMillis;
     int lastNumber = byteDigit % 10;
     if(lastNumber == 1) {
@@ -216,15 +214,15 @@ void writeReg(int digit) {
 }
 
 void writeNumber(){
-  for(int i = 0; i < displayCount; i++) {   
+  for(int i = 0; i < displayCount; i++){   
     showDigit(i);
     writeReg(displayByteDigits[i]);
     delay(4);  
   }
 }
 
-void showDigit(int displayNumber) {
-  for( int i = 0; i < displayCount; i++) {
+void showDigit(int displayNumber){
+  for( int i = 0; i < displayCount; i++){
     digitalWrite(displayDigits[i], HIGH);
   }
   digitalWrite(displayDigits[displayNumber], LOW);
