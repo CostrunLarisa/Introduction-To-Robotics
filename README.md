@@ -69,7 +69,7 @@ The current home-work involves using a joystick in setting the values on each di
 - The catch:Upgrading the information from the laboratory to cover all the cases, using interrupts for the button and even eeprom.
 
 ### Picture of the setup
-![alt text]!(https://user-images.githubusercontent.com/41392462/142203011-71db7074-52e3-4b30-a965-38139de3d9fd.jpeg)
+![alt text](https://user-images.githubusercontent.com/41392462/142203011-71db7074-52e3-4b30-a965-38139de3d9fd.jpeg)
 
 ### Link to video showcasing functionality
 
