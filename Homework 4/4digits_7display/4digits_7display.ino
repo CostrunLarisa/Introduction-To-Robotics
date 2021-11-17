@@ -79,7 +79,7 @@ void setup() {
   pinMode(clockPin, OUTPUT);
   pinMode(pinSW, INPUT_PULLUP); 
   attachInterrupt(digitalPinToInterrupt(pinSW), signal, FALLING);
-  for(int i =  0; i < displayCount; i++){
+  for(int i =  0; i < displayCount; i++) {
     pinMode(displayDigits[i], OUTPUT);
     digitalWrite(displayDigits[i], LOW);
   }
@@ -99,7 +99,7 @@ void loop() {
   }
 }
 
-void firstState(){
+void firstState() {
  // On Ox axis, if the value is lower than a chosen min threshold, then
  // decrease by 1 the digit value.
   xValue = analogRead(pinX);
@@ -117,7 +117,8 @@ void firstState(){
   if (xValue > maxThreshold && joyMoved == false) {
     if (indexDP > 0) {
         indexDP--;
-    } else {
+    }
+    else {
         indexDP = 0;
     }
     joyMoved = true;
@@ -166,35 +167,37 @@ void signal() {
   isPushed = true;
   lastSwState = LOW;
 }
-void changeValue(){
+void changeValue() {
   yValue = analogRead(pinY);
   if (yValue < minThreshold && joyMoved == false) {
     if (displayLastDigit[indexDP] < 9) {
           displayLastDigit[indexDP]++;
-        } else {
+        }
+    else {
           displayLastDigit[indexDP] = 9;
         }
-        joyMoved = true;
-      }
+    joyMoved = true;
+  }
     // On Oy axis, if the value is bigger than a chosen max threshold, then
     // increase by 1 the digit value
   if (yValue > maxThreshold && joyMoved == false) {
     if (displayLastDigit[indexDP] > 0) {
           displayLastDigit[indexDP]--;
-        } else {
+        }
+    else {
           displayLastDigit[indexDP] = 0;
         }
-        joyMoved = true;    
+    joyMoved = true;    
   }
 
-    if (yValue >= minThreshold && yValue <= maxThreshold) {
+  if (yValue >= minThreshold && yValue <= maxThreshold) {
       joyMoved = false;
-    }
+  }
 }
-void blinkingDP(){
+void blinkingDP() {
    // If we are on a display and we didn't move
   int byteDigit = displayByteDigits[lastDigit];
-  if(currentMillis - previousMillis >= interval){
+  if(currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
     int lastNumber = byteDigit % 10;
     if(lastNumber == 1) {
@@ -213,15 +216,15 @@ void writeReg(int digit) {
 }
 
 void writeNumber(){
-  for(int i = 0; i < displayCount; i++){   
+  for(int i = 0; i < displayCount; i++) {   
     showDigit(i);
     writeReg(displayByteDigits[i]);
     delay(4);  
   }
 }
 
-void showDigit(int displayNumber){
-  for( int i = 0; i < displayCount; i++){
+void showDigit(int displayNumber) {
+  for( int i = 0; i < displayCount; i++) {
     digitalWrite(displayDigits[i], HIGH);
   }
   digitalWrite(displayDigits[displayNumber], LOW);
