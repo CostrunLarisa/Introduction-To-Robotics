@@ -72,4 +72,4 @@ The current home-work involves using a joystick in setting the values on each di
 ![alt text](https://user-images.githubusercontent.com/41392462/142203011-71db7074-52e3-4b30-a965-38139de3d9fd.jpeg)
 
 ### Link to video showcasing functionality
-https://www.youtube.com/watch?v=mNfjkNxjBsA&ab_channel=BiancaLarisa
+https://www.youtube.com/watch?v=RwbK5eOvJjo&ab_channel=BiancaLarisa
