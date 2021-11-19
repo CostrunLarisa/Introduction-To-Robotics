@@ -1,43 +1,19 @@
-// declare all the joystick pins
-const int pinSW = 2; // digital pin connected to switch output
-const int pinX = A0; // A0 - analog pin connected to X output
-const int pinY = A1; // A1 - analog pin connected to Y output
+//DS= [D]ata [S]torage - data
+//STCP= [ST]orage [C]lock [P]in latch
+//SHCP= [SH]ift register [C]lock [P]in clock
+// Define Connections to 74HC595
+#include <EEPROM.h>
+const int latchPin = 11; // STCP to 12 on Shift Register
+const int clockPin = 10; // SHCP to 11 on Shift Register
+const int dataPin = 12; // DS to 14 on Shift Register
 
-
-const int dataPin = 12;
-const int latchPin = 11;
-const int clockPin = 10;
-
-const int seg01 = 7;
-const int seg02 = 6;
-const int seg03 = 5;
-const int seg04 = 4;
-
-// The current digit from the current display
-int lastDigit = 0;
-// Save the number showed on the display
-int displayLastDigit[] = {
-    0, 0, 0, 0
-};
-
-// Save the number showed on the display with DP high/low/blinking
-int displayByteDigits[] = {
-  B11111100,
-  B11111100,
-  B11111100,
-  B11111100,    
-};
-int displayDigits[] = {
-  seg01, seg02, seg03, seg04
-};
-
-const int displayCount = 4;
-
-// The index of the current DP
-int indexDP = 0;
-byte digitArray[16] = {
+/*  See that the array is declared as int
+ *  The B in front is the binary representation of the int number
+ *  Instead of B11111100, which displays 0, we can write 252
+ */
+int digitArray[16] = {
 //A B C D E F G DP 
-  B11111100, // 0
+  B11111100, // 0 
   B01100000, // 1
   B11011010, // 2
   B11110010, // 3
@@ -54,190 +30,171 @@ byte digitArray[16] = {
   B10011110, // E
   B10001110  // F
 };
+const int segD1 = 7;
+const int segD2 = 6;
+const int segD3 = 5;
+const int segD4 = 4;
+int displayDigits[] = {
+  segD1, segD2, segD3, segD4
+};
+const int displayCount = 4;
+int numbers[] = {0, 0, 0, 0};
 
-// dp on or off
-bool dpState = LOW;
-// states of the button press
-bool swState = LOW;
-volatile bool lastSwState = LOW;
-int xValue = 0;
-int yValue = 0;
+volatile bool lockedIn = false;
+volatile bool lastSwState = false;
+volatile long long lastDebounce = 0;
+const int debounceInterval = 200;
+const int blinkSpeed = 500;
+bool joyMovedX = false;
+bool joyMovedY = false;
+const int swPin = 2;
 
-bool joyMoved = false;
-int minThreshold= 400;
-int maxThreshold= 600;
-int currentMillis;
-int previousMillis = 0;
-int interval = 1000;
-volatile boolean isPushed = false;
-const int segSize = 8;
-const int noOfDigits = 10;
+unsigned long lastIncrement = 0;
+unsigned long delayCount = 50;
+unsigned long number = 0;
+int currentIndex = 0;
 
-void setup() { 
-  pinMode(dataPin, OUTPUT);
+const int pinX = A0;
+const int pinY = A2;
+const int minThresh = 200;
+const int maxThresh = 600;
+
+void setup () {
   pinMode(latchPin, OUTPUT);
   pinMode(clockPin, OUTPUT);
-  pinMode(pinSW, INPUT_PULLUP); 
-  attachInterrupt(digitalPinToInterrupt(pinSW), signalDP, FALLING);
-  for(int i =  0; i < displayCount; i++){
+  pinMode(dataPin, OUTPUT);
+  pinMode(swPin, INPUT_PULLUP);
+  pinMode(pinX, INPUT);
+  pinMode(pinY, INPUT);
+  for (int i = 0; i < displayCount; i++) {
     pinMode(displayDigits[i], OUTPUT);
     digitalWrite(displayDigits[i], LOW);
+    numbers[i] = EEPROM.read(i);
   }
+  attachInterrupt(digitalPinToInterrupt(2), updateSW, FALLING);
   Serial.begin(9600);
 }
 
+
 void loop() {
-  // If we switch through digits (the joystick button wasn't pushed)
-  if(isPushed == false) {
-    firstState();
-  }
-  // Otherwise we block the digit and change the DP state
-  else {
-    changeStateDP(1);
-    secondState();
-  }
+  byte dpState = updateDP();
+  writeNumber(numbers, dpState);
+  Serial.println(lockedIn);
+  updateJoystick();
 }
 
-void firstState(){
- // On Ox axis, if the value is lower than a chosen min threshold, then
- // decrease by 1 the digit value.
-  writeNumber();
-  xValue = analogRead(pinX);
-  currentMillis = millis();
-  if (xValue < minThreshold && joyMoved == false) {
-    if (indexDP < 3) {
-        indexDP++;
-    } else {
-        indexDP = 3;
-    }
-    joyMoved = true;
-  }
- // On Ox axis, if the value is bigger than a chosen max threshold, then
- // increase by 1 the digit value
-  if (xValue > maxThreshold && joyMoved == false) {
-    if (indexDP > 0) {
-        indexDP--;
-    } else {
-        indexDP = 0;
-    }
-    joyMoved = true;
-  }
-  if (xValue >= minThreshold && xValue <= maxThreshold) {
-	  joyMoved = false;
-  }
-  // Change the previous DP into LOW
-  changeStateDP(0);
-  // Save the last showed digit
-  lastDigit = displayLastDigit[indexDP];
-  // Make the current DP blink
-  blinkingDP();
+void writeReg(int digit) {
+    // ST_CP LOW to keep LEDs from changing while reading serial data
+    digitalWrite(latchPin, LOW);
+    // Shift out the bits
+    shiftOut(dataPin, clockPin, MSBFIRST, digit);
+    /* ST_CP on Rising to move the data from shift register
+     * to storage register, making the bits available for output.
+     */
+    digitalWrite(latchPin, HIGH);
 }
 
-void secondState() {
-  isPushed = false;
-  swState = digitalRead(pinSW);
-  if(swState == LOW && swState != lastSwState) {
-    isPushed = true;
-  } 
-  // Check if the button wasn't pressed twice
-  while(isPushed == false) { 
-    // While we didn't pressed the button, increase/decrease the value   
-    changeValue();
-    // Change the digit showed on the display
-    lastDigit = displayLastDigit[indexDP];
-    // Change the DP of the new digit
-    changeStateDP(1);    
-    writeNumber();    
-  }
-  lastSwState = swState;
-  isPushed = false;
-  displayByteDigits[indexDP] = digitArray[lastDigit];  
-}
 
-void changeStateDP(bool stateDigit) {
-  byte byteDigit = digitArray[lastDigit];
-  bitWrite(byteDigit, 0, stateDigit);
-  displayByteDigits[indexDP] = byteDigit;
-  showDigit(indexDP);
-  writeReg(byteDigit);
-  //delay(2);
-
-}
-void signalDP() {
-  isPushed = true;
-  lastSwState = LOW;
-}
-void changeValue(){
-  yValue = analogRead(pinY);
-  if (yValue < minThreshold && joyMoved == false) {
-    if (displayLastDigit[indexDP] < 9) {
-          displayLastDigit[indexDP]++;
-        } else {
-          displayLastDigit[indexDP] = 9;
-        }
-        joyMoved = true;
-      }
-    // On Oy axis, if the value is bigger than a chosen max threshold, then
-    // increase by 1 the digit value
-  if (yValue > maxThreshold && joyMoved == false) {
-    if (displayLastDigit[indexDP] > 0) {
-          displayLastDigit[indexDP]--;
-        } else {
-          displayLastDigit[indexDP] = 0;
-        }
-        joyMoved = true;    
-  }
-
-    if (yValue >= minThreshold && yValue <= maxThreshold) {
-      joyMoved = false;
-    }
-}
-void blinkingDP(){
-   // If we are on a display and we didn't move
-  int byteDigit = displayByteDigits[lastDigit];
-  if(currentMillis - previousMillis >= interval){
-    previousMillis = currentMillis;
-    int lastNumber = byteDigit % 10;
-    if(lastNumber == 1) {
-      changeStateDP(0);
-    } 
-    else {
-      changeStateDP(1);
-    }
-  }
-}
-
-void writeReg(int digit) { 
-  digitalWrite(latchPin, LOW);
-  shiftOut(dataPin, clockPin, MSBFIRST, digit);  
-  digitalWrite(latchPin, HIGH);
-}
-
-void writeNumber(){
-  for(int i = 0; i < displayCount; i++){   
-    showDigit(i);
-    writeReg(displayByteDigits[i]);
-    delay(4);  
-  }
-}
-
-void showDigit(int displayNumber){
-  for( int i = 0; i < displayCount; i++){
+void showDigit(int displayNumber) {
+  // delay(1);
+  // first, disable all the display digits
+  for (int i = 0; i < displayCount; i++) {
     digitalWrite(displayDigits[i], HIGH);
   }
   digitalWrite(displayDigits[displayNumber], LOW);
+  delay(5);
 }
 
+byte updateDP() {
+  if (lockedIn == true) {
+    return HIGH;
+  } else {
+    return (millis() % blinkSpeed) > (blinkSpeed / 2);
+  }
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
+void writeNumber(int numbers[], byte dpState) {
+  int i = 0;
+  int displayDigit = 0;
+  int currentDigit;
+  
+  for (int i = 0; i < 4; i++) {
+    // get the last digit of the number
+    currentDigit = numbers[i];
+    // send the number to the display
+    if (i == currentIndex) {
+      writeReg(digitArray[currentDigit] + dpState);
+    }
+    else {
+      writeReg(digitArray[currentDigit]);
+    }
+    // enable only the display digit for that 
+    showDigit(i);
+    // delay(5);
+    // eliminate the last digit of the number
+  }
+}
+void updateJoystick() {
+  int xValue = analogRead(pinX);
+  int yValue = analogRead(pinY);
+  if (lockedIn == false) {
+    if (xValue < minThresh && joyMovedX == false) {
+      if (currentIndex < 3) {
+        currentIndex++;
+      }
+      else {
+        currentIndex = 0;
+      }
+      joyMovedX = true;
+    }
+    if (xValue > maxThresh && joyMovedX == false) {
+      if (currentIndex > 0) {
+        currentIndex--;
+      }
+      else {
+        currentIndex = 3;
+      }
+      joyMovedX = true;
+    }
+    if (xValue >= minThresh && xValue <= maxThresh) {
+      joyMovedX = false;
+    }
+  }
+  else {
+    if (yValue < minThresh && joyMovedY == false) {
+      if (numbers[currentIndex] < 9) {
+        numbers[currentIndex]++;
+      }
+      else {
+        numbers[currentIndex] = 0;
+      }
+      joyMovedY = true;
+    }
+    if (yValue > maxThresh && joyMovedY == false) {
+      if (numbers[currentIndex] > 0) {
+        numbers[currentIndex]--;
+      }
+      else {
+        numbers[currentIndex] = 9;
+      }
+      joyMovedY = true;
+    }
+    if (yValue >= minThresh && yValue <= maxThresh) {
+      joyMovedY = false;
+    }
+  }
+}
+void updateSW() {
+  Serial.println("in");
+  if (millis() - lastDebounce > debounceInterval) {
+    lastSwState = lockedIn;
+    lockedIn = !lockedIn;
+    if (lastSwState == true && lockedIn == false) {
+      saveToMemory();
+    }
+  }
+  lastDebounce = millis();
+}
+void saveToMemory() {
+  EEPROM.update(currentIndex, numbers[currentIndex]);
+}
